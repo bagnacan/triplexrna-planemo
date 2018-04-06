@@ -1,0 +1,287 @@
+#!/usr/bin/env python
+
+"""
+TriplexRNA: a database of cooperating miRNAs and their mutual targets
+
+This module queries the TriplexRNA by leveraging on the database's
+API. Targets of synergistic microRNA regulation are retrieved by
+providing a model organism and a search criteria:
+
+Examples:
+
+* retrieve all RNA triplexes involving gene CDNK1A
+    triplexrna -o Human -g CDKN1A
+  The command executes the API call:
+    "triplexrna.org/JSON/Human/gene/CDKN1A"
+
+* retrieve all RNA triplexes involving the genes CISH and CTPS2
+    triplexrna -o Human -g CISH,CTPS2
+  The command executes the API call:
+    "triplexrna.org/JSON/Human/genes/CISH/CTPS2"
+
+* retrieve all RNA triplexes involving the genes CISH and CTPS2
+  privided in the file gene_list.txt
+    triplexrna -o Human -g /path/to/gene_list.txt
+  The command executes the API call:
+    "triplexrna.org/JSON/Human/genes/CISH/CTPS2"
+
+* retrieve all details of RNA triplex ID 529801
+    triplexrna -o Human -t 529801
+  The command executes the API call:
+    "triplexrna.org/JSON/Human/triplex/529801"
+
+* retrieve all RNA triplexes involved in the KEGG pathway ID hsa05204
+    triplexrna -o Human -p hsa05204
+  The command executes the API call:
+    "triplexrna.org/JSON/Human/pathway/hsa05204"
+
+* retrieve all RNA triplexes involving miRNA ID hsa-miR-210
+    triplexrna -o Human -m hsa-miR-210
+  The command executes the API call
+    "triplexrna.org/JSON/Human/mirna/hsa-miR-210"
+
+* retrieve all RNA triplexes involving miRNA IDs hsa-miR-210 and
+  hsa-let-7b
+    triplexrna -o Human -m hsa-miR-210,hsa-let-7b
+  The command executes the API call
+    "triplexrna.org/JSON/Human/mirna/hsa-miR-210/hsa-let-7b"
+
+* retrieve all RNA triplexes involving the miRNA pair hsa-miR-210 and
+  hsa-let-7b targeting the gene targets HIF1A and PROK1
+    triplexrna -o Human -m hsa-miR-210,hsa-let-7b -x HIF1A,PROK1
+  The command executes the API call
+    "triplexrna.org/JSON/Human/mirna/hsa-miR-210/hsa-let-7b/targeting/HIF1A/PROK1"
+"""
+
+import getopt
+import json
+import os
+import requests
+import sys
+
+
+# TriplexRNA URL
+URL = "https://triplexrna.org/JSON/"
+
+# TriplexRNA API routes
+API_ROUTE_GENE      = "gene/"
+API_ROUTE_GENES     = "genes/"
+API_ROUTE_TRIPLEX   = "triplex/"
+API_ROUTE_PATHWAY   = "pathway/"
+API_ROUTE_MIRNA     = "mirna/"
+API_ROUTE_TARGETING = "/targeting/"
+
+# multiple ID separator
+SEPARATOR = ","
+
+# organisms
+ORGANISM_HSA = "Human"
+ORGANISM_MMU = "Mouse"
+ORGANISMS = [
+    ORGANISM_HSA,
+    ORGANISM_MMU
+    ]
+
+# query organism and criteria
+QUERY_ORGANISM  = "organism"
+QUERY_GENE      = "gene"
+QUERY_TRIPLEX   = "triplex"
+QUERY_PATHWAY   = "pathway"
+QUERY_MIRNA     = "mirna"
+QUERY_TARGETING = "targeting"
+QUERY = [
+    QUERY_ORGANISM,
+    QUERY_GENE,
+    QUERY_TRIPLEX,
+    QUERY_PATHWAY,
+    QUERY_MIRNA,
+    QUERY_TARGETING
+    ]
+
+
+# print the usage
+#
+def print_usage():
+    """
+    Prints the usage.
+    """
+    print("\tUsage:\t" + os.path.basename(sys.argv[0]) + " [options]")
+    print("")
+    print("\tOptions:\t-o ORGANISM\tsearch all RNA triplexes of the \"Human\" or \"Mouse\" model ORGANISM")
+    print("\t\t\t-g GENE\t\tretrieve all RNA triplexes involving gene GENE, or a list of genes (comma separated list, or file path with one identifier per line)")
+    print("\t\t\t-t TRIPLEX\tretrieve all details of RNA triplex TRIPLEX")
+    print("\t\t\t-p PATHWAY\tretrieve all RNA triplexes of KEGG pathway PATHWAY")
+    print("\t\t\t-m MIRNA\tretrieve all RNA triplexes involving the miRNA or miRNA-pair MIRNA (comma separated list)")
+    print("\t\t\t-x TARGET\tretrieve all RNA triplexes of a given miRNA pair (implies -m), involving a gene TARGET or a list of gene targets (comma separated list, or file path with one identifier per line)")
+
+
+
+# get cli options
+#
+def get_cli(argv):
+    """
+    Parses the command line options.
+    """
+    query = {}
+    criteria = []
+    organism = False
+
+    try:
+        opts, args = getopt.getopt(argv, "ho:g:t:p:m:x:")
+    except:
+        print_usage()
+        sys.exit(1)
+
+    for opt, arg in opts:
+
+        # help
+        if opt == "-h":
+            print_usage()
+            sys.exit(0)
+
+        # organism
+        elif opt == "-o":
+            if arg not in ORGANISMS:
+                print("ERROR: Unrecognised organism.")
+                print_usage()
+                sys.exit(1)
+            else:
+                query[QUERY_ORGANISM] = arg
+                organism = True
+
+        # gene
+        elif opt == "-g":
+            # from file
+            if os.path.isfile(arg):
+                try:
+                    gene_identifiers = []
+                    with open(arg) as gene_list:
+                        for g in gene_list:
+                            gene_identifiers.append(g.lstrip().rstrip())
+                    query[QUERY_GENE] = gene_identifiers
+                    criteria.append(QUERY_GENE)
+                except IOError:
+                    print("ERROR: Could not read gene list file.")
+                    print_usage()
+                    sys.exit(1)
+            # from cli
+            else:
+                query[QUERY_GENE] = arg.split(SEPARATOR)
+                criteria.append(QUERY_GENE)
+
+        # triplex
+        elif opt == "-t":
+            query[QUERY_TRIPLEX] = arg
+            criteria.append(QUERY_TRIPLEX)
+
+        # KEGG pathway
+        elif opt == "-p":
+            query[QUERY_PATHWAY] = arg
+            criteria.append(QUERY_PATHWAY)
+
+        # miRNA
+        elif opt == "-m":
+            if len(arg.split(SEPARATOR)) > 2 :
+                print("ERROR: Too many miRNA identifiers.")
+                print_usage()
+                sys.exit(1)
+            else:
+                query[QUERY_MIRNA] = arg.split(SEPARATOR)
+                criteria.append(QUERY_MIRNA)
+
+        # gene targets of miRNA pair
+        elif opt == "-x":
+            query[QUERY_TARGETING] = arg.split(SEPARATOR)
+            criteria.append(QUERY_TARGETING)
+
+    # check mandatory options
+    if not organism:
+        print("ERROR: Missing organism.")
+        print_usage()
+        sys.exit(1)
+    elif not criteria:
+        print("ERROR: Missing retrieval criteria.")
+        print_usage()
+        sys.exit(1)
+    else:
+        # "QUERY_TARGETING" implies "QUERY_MIRNA". Otherwise, only one
+        # criteria can be specified at once
+        if len(criteria) > 1 :
+            if not ((QUERY_MIRNA in criteria) and (QUERY_TARGETING in criteria)):
+                print("ERROR: Only one retrieval criteria at once.")
+                print_usage()
+                sys.exit(1)
+
+    return query
+
+
+
+# build API query
+#
+def build_query(query):
+    """
+    Builds the API query to be launched against the TriplexRNA.
+    """
+    url = (URL + query[QUERY_ORGANISM] + "/")
+
+
+    # gene targets of miRNA pair
+    if (QUERY_MIRNA in query.keys()) and (QUERY_TARGETING in query.keys()) :
+        url += ( API_ROUTE_MIRNA + '/'.join(map(str, query[QUERY_MIRNA])) + API_ROUTE_TARGETING + '/'.join(map(str, query[QUERY_TARGETING])) )
+
+    else:
+        # gene
+        if QUERY_GENE in query.keys():
+            # single gene ID
+            if len(query[QUERY_GENE]) == 1 :
+                url += ( API_ROUTE_GENE + query[QUERY_GENE][0] )
+            # list of gene IDs
+            else:
+                url += ( API_ROUTE_GENES + '/'.join(map(str, query[QUERY_GENE])) )
+
+        # triplex
+        if QUERY_TRIPLEX in query.keys():
+            url += ( API_ROUTE_TRIPLEX + query[QUERY_TRIPLEX] )
+
+        # KEGG pathway
+        if QUERY_PATHWAY in query.keys():
+            url += ( API_ROUTE_PATHWAY + query[QUERY_PATHWAY] )
+
+        # miRNA
+        if QUERY_MIRNA in query.keys():
+            # single miRNA ID
+            if len(query[QUERY_MIRNA]) == 1 :
+                url += ( API_ROUTE_MIRNA + query[QUERY_MIRNA][0] )
+            # list of miRNA IDs
+            else:
+                url += ( API_ROUTE_MIRNA + '/'.join(map(str, query[QUERY_MIRNA])) )
+
+    return url
+
+
+
+# launch API query
+#
+def launch_query(query):
+    response = requests.get(query)
+
+    if response.status_code == 200:
+
+        # verify the response is JSON
+        try:
+            content = json.loads(response.content)
+            if content:
+                print response.content
+        except:
+            pass
+
+
+
+#
+# main
+#
+if __name__ == '__main__':
+    query_parameters = get_cli(sys.argv[1:])
+    query = build_query(query_parameters)
+    launch_query(query)
+
