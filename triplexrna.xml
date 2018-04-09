@@ -2,15 +2,21 @@
     <requirements>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
-        triplexrna -o Human -g "$input1" > "$output1"
+        triplexrna -o $organism -g "$input1" > "$output"
     ]]></command>
     <inputs>
-        <param type="data" name="input1" format="txt" />
+        <param name="$organism" type="select" label="organism" help="Select the organism">
+            <option value="Human" selected="true">Human</option>
+            <option value="Mouse">Mouse</option>
+        </param>
+        <param name="$identifiers" type="select" label="identifier(s)" help="Select the identifier(s)">
+            <option value="CDKN1A" selected="true">CDKN1A</option>
+            <option value="CISH">CISH</option>
+            <option value="CTPS2">CTPS2</option>
+        </param>
     </inputs>
     <outputs>
-        <data name="output1" format="data" />
-        <data name="output2" format="data" from_work_dir="result" />
-        <data name="output3" format="data" from_work_dir="result" />
+        <data name="output" format="data" />
     </outputs>
     <help><![CDATA[
         /bin/sh: 1: triplexrna: not found
