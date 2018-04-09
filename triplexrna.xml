@@ -1,27 +1,38 @@
 <tool id="triplexrna" name="TriplexRNA" version="0.1.0">
     <requirements>
     </requirements>
+
+    <!-- command -->
     <command detect_errors="exit_code"><![CDATA[
-        triplexrna -o $organism -g "$input1" > "$output"
+        triplexrna -o "$organism" -g "$identifier" > "$output"
     ]]></command>
+
+    <!-- inputs -->
     <inputs>
-        <param name="$organism" type="select" label="organism" help="Select the organism">
+        <param name="organism" type="select" label="organism" help="Select the target organism">
             <option value="Human" selected="true">Human</option>
             <option value="Mouse">Mouse</option>
         </param>
-        <param name="$identifiers" type="select" label="identifier(s)" help="Select the identifier(s)">
-            <option value="CDKN1A" selected="true">CDKN1A</option>
-            <option value="CISH">CISH</option>
-            <option value="CTPS2">CTPS2</option>
-        </param>
+        <param name="identifier" type="text" value="" label="identifier" />
     </inputs>
+
+    <!-- outputs -->
     <outputs>
         <data name="output" format="data" />
     </outputs>
-    <help><![CDATA[
-        /bin/sh: 1: triplexrna: not found
 
+    <!-- tests -->
+    <tests>
+        <test>
+            <param name="organism" value="Human" />
+            <param name="identifier" value="CDKN1A" />
+        </test>
+    </tests>
+    <!-- help -->
+    <help><![CDATA[
     ]]></help>
+
+    <!-- citations -->
     <citations>
         <citation type="bibtex">
 @misc{renameTODO,
@@ -31,4 +42,5 @@
   url = {https://triplexrna.org},
 }</citation>
     </citations>
+
 </tool>
