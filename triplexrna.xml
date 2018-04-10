@@ -4,28 +4,46 @@
 
     <!-- command -->
     <command detect_errors="exit_code"><![CDATA[
-        python '$__tool_directory__/triplexrna' -o '$organism' -g '$identifier' > '$output'
+        python '$__tool_directory__/triplexrna' -o '$organism'
+        #if $query.selector == 'gene'
+            -g '$query.gene'
+        #else
+            -m '$query.mirna'
+        #end if
+        > '$output'
     ]]></command>
 
     <!-- inputs -->
     <inputs>
-        <param name="organism" type="select" label="organism" help="Select the target organism">
+        <param name="organism" type="select" label="Organism" help="Select the organism">
             <option value="Human" selected="true">Human</option>
             <option value="Mouse">Mouse</option>
         </param>
-        <param name="identifier" type="text" value="" label="identifier" />
+
+        <conditional name="query">
+            <param name="selector" type="select" label="Target" help="Select the type of target(s) involved in synergistic microRNA regulation">
+                <option value="gene" selected="true">gene</option>
+                <option value="mirna">mirna</option>
+            </param>
+            <when value="gene">
+                <param name="gene" type="text" value="" label="Gene identifier" />
+            </when>
+            <when value="mirna">
+                <param name="mirna" type="text" value="" label="miRNA identifier" />
+            </when>
+        </conditional>
     </inputs>
 
     <!-- outputs -->
     <outputs>
-        <data name="output" format="JSON" />
+        <data name="output" format="json" />
     </outputs>
 
     <!-- tests -->
     <tests>
         <test>
             <param name="organism" value="Human" />
-            <param name="identifier" value="CDKN1A" />
+            <param name="gene" value="CDKN1A" />
             <output name="output" />
         </test>
     </tests>
