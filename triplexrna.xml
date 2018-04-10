@@ -4,7 +4,7 @@
 
     <!-- command -->
     <command detect_errors="exit_code"><![CDATA[
-        triplexrna -o '$organism' -g '$identifier' > '$output'
+        python '$__tool_directory__/triplexrna' -o '$organism' -g '$identifier' > '$output'
     ]]></command>
 
     <!-- inputs -->
@@ -18,7 +18,7 @@
 
     <!-- outputs -->
     <outputs>
-        <data name="output" format="data" />
+        <data name="output" format="JSON" />
     </outputs>
 
     <!-- tests -->

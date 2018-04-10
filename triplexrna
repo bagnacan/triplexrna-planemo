@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 TriplexRNA: a database of cooperating miRNAs and their mutual targets
 
