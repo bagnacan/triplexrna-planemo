@@ -31,6 +31,14 @@
     </tests>
     <!-- help -->
     <help><![CDATA[
+Usage:  triplexrna -o <organism> [options]
+
+Options:        -o ORGANISM     search all RNA triplexes of the "Human" or "Mouse" model ORGANISM
+                -g GENE         retrieve all RNA triplexes involving gene GENE, or a list of genes (comma separated list, or file path with one identifier per line)
+                -t TRIPLEX      retrieve all details of RNA triplex TRIPLEX
+                -p PATHWAY      retrieve all RNA triplexes of KEGG pathway PATHWAY
+                -m MIRNA        retrieve all RNA triplexes involving the miRNA or miRNA-pair MIRNA (comma separated list)
+                -x TARGET       retrieve all RNA triplexes of a given miRNA pair (implies -m), involving a gene TARGET or a list of gene targets (comma separated list, or file path with one identifier per line)
     ]]></help>
 
     <!-- citations -->
