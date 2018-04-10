@@ -26,6 +26,7 @@
         <test>
             <param name="organism" value="Human" />
             <param name="identifier" value="CDKN1A" />
+            <output name="output" format="data" />
         </test>
     </tests>
     <!-- help -->
